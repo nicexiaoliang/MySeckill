@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <link href="/css/bootstrap.css" type="text/css" rel="stylesheet"/>
+    <title>商品列表</title>
+    <style>
+        .bgcolor{
+            background-color: yellow;
+            border: solid;
+            border-width: 2px;
+            border-color: black;
+        }
+        .flex-container{
+            display:flex;
+            flex-wrap: wrap;
+            background-color: #c7e9ff;
+            justify-content: space-around;
+
+        }
+        .flex-item{
+            width: 250px;
+            height: 350px;
+            background-color: greenyellow;
+            border: solid;
+            border-width: 5px;
+            border-color: black;
+            margin-bottom: 20px;
+            margin-top: 20px;
+            margin-left: 30px;
+            margin-right: 20px;
+            /*display: inline-block;*/
+        }
+    </style>
+</head>
+<body>
+<div class="row">
+    <div class="col-md-4 bgcolor"></div>
+    <div class="col-md-4 bgcolor" style="text-align: center"><h2>秒杀商品列表</h2></div>
+    <div class="col-md-4 bgcolor">
+        <div><b th:text="${user.getNickname()}"></b></div>
+    </div>
+</div>
+<div class="row" style="height: 10px;background-color: #ff56f9"></div>
+<div class="row" style="height: 30px"></div>
+<div class="row">
+    <div class="flex-container">
+        <div class="flex-item" th:each="goods:${goodslist}">
+            <div class="row" style="background-color: red;height: 80%;">
+                <div class="col-md-12">
+                    <img th:src="${goods.getGoodsImg()}" style="height: 100%;width: 100%;">
+                </div>
+            </div>
+            <div class="row" style="height: 20%;">
+                <a th:href="'/goods_detail/goodsId/'+${goods.getGoodsId()}"><b>点击查看详情</b></a>
+            </div>
+        </div>
+        <!--<div class="flex-item"></div>-->
+        <!--<div class="flex-item"></div>-->
+    </div>
+</div>
+</body>
+</html>
+<!--13232192824-->

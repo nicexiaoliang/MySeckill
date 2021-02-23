@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <link href="/css/bootstrap.css" type="text/css" rel="stylesheet"/>
+    <title>商品详情</title>
+</head>
+<body>
+<h2>商品详情</h2>
+<div>
+    <table border="3">
+        <tr>
+            <td><h3>标题：</h3></td>
+            <td><h3 th:text="${goods.getGoodsTitle()}"></h3></td>
+        </tr>
+        <tr>
+            <td><h3>名称：</h3></td>
+            <td><h3 th:text="${goods.getGoodsName()}"></h3></td>
+        </tr>
+        <tr>
+            <td><h3>价格：</h3></td>
+            <td><h3 th:text="${goods.getSeckillPrice()}"></h3></td>
+        </tr>
+        <tr>
+            <td><h3 style="color: red">状态：</h3></td>
+            <td>
+                <h3 th:if="${seckillStatus eq 0}">秒杀未开始</h3>
+                <h3 th:if="${seckillStatus eq 1}">秒杀进行中</h3>
+                <h3 th:if="${seckillStatus eq 2}">秒杀已结束</h3>
+            </td>
+        </tr>
+    </table>
+    <a th:href="'/seckill/goodsid/'+${goodsId}"><button type="button" class="btn btn-primary">立刻秒杀</button></a>
+</div>
+</body>
+</html>
