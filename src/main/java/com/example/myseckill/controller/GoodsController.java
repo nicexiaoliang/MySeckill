@@ -35,7 +35,7 @@ public class GoodsController {
 
     public int count=0;
 
-//    查询商品列表
+//    查询商品列表.
     @RequestMapping("/goodslist")
     @ResponseBody
     public String getGoodsList(HttpServletRequest request, HttpServletResponse response
