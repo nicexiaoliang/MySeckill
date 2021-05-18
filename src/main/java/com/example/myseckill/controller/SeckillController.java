@@ -13,10 +13,12 @@ import com.example.myseckill.service.GoodsService;
 import com.example.myseckill.service.OrderService;
 import com.example.myseckill.service.SeckillService;
 import com.google.common.util.concurrent.RateLimiter;
+import lombok.SneakyThrows;
 import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.client.producer.SendStatus;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.remoting.exception.RemotingException;
@@ -31,6 +33,7 @@ import redis.clients.jedis.JedisPool;
 
 import java.io.UnsupportedEncodingException;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -47,6 +50,9 @@ public class SeckillController {
 
     @Autowired
     DefaultMQProducer sender;
+
+    @Autowired
+    ExecutorService senderGroup;
 
     volatile int init_count=0;
 
@@ -106,14 +112,28 @@ public class SeckillController {
             return "error";
         }
 
-        // 入队
+        // 入队,使用多线程，异步发送
         SeckillMessage seckillMessage = new SeckillMessage();
         seckillMessage.setUser(user);
         seckillMessage.setGoodsId(goodsId);
         String string = JedisService.beanToString(seckillMessage);
         Message message = new Message("shop1", "tag1", string.getBytes(RemotingHelper.DEFAULT_CHARSET));
-        SendResult sendResult = sender.send(message);
-//        System.out.println(send.getSendStatus());
+
+        Runnable task=new Runnable() {
+            @SneakyThrows
+            @Override
+            public void run() {
+                SendStatus sendOk=SendStatus.SEND_OK;
+                SendStatus sendStatus=SendStatus.SLAVE_NOT_AVAILABLE;
+                while(sendStatus!=sendOk){
+                    SendResult sendResult = sender.send(message);
+                    sendStatus=sendResult.getSendStatus();
+                }
+            }
+        };
+        senderGroup.execute(task);
+
+//        System.out.println(sendResult.getSendStatus());
 //        logger.info(send.getSendStatus().toString());
 //        send_count++;
 //        System.out.println("===============>消息发送总数："+send_count);
@@ -125,7 +145,7 @@ public class SeckillController {
 
     //    初始化
     public void init() {
-        System.out.println("初始化。。。。。");
+        System.out.println("初始化......");
         List<SkGoodsSeckill> goodsList = goodsService.getGoodsList();
         if (goodsList == null) {
             return;
