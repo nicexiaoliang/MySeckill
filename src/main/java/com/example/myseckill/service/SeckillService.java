@@ -35,7 +35,8 @@ public class SeckillService {
     //    下单，保证事务
     @Transactional
     public SkOrderInfo seckill(SkUser user, SkGoodsSeckill skGoodsSeckill) {
-        boolean success = goodsService.reduceStock(skGoodsSeckill);
+//        使用悲观锁，超过5次重试失败之后，线程睡眠5秒后重试
+        boolean success = goodsService.reduceStockByLock(skGoodsSeckill);
         if (success) {
             return orderService.createOrder(user, skGoodsSeckill);
         } else {

@@ -1,6 +1,7 @@
 package com.example.myseckill.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.example.myseckill.dao.GoodsDao1;
 import com.example.myseckill.entity.SkGoodsSeckill;
 import com.example.myseckill.redis.GoodsKey;
@@ -13,7 +14,7 @@ import java.util.List;
 
 @Service
 public class GoodsService {
-    private static final int DEFAULT_MAX_RETRIES=5;
+    private static final int DEFAULT_MAX_RETRIES=100;
     @Autowired
     GoodsDao1 goodsDao1;
     @Autowired
@@ -34,13 +35,53 @@ public class GoodsService {
         return skGoodsSeckill;
     }
 
-    //    减库存，每次减1
+    //    通过id查询最新版本
+    public long getVersion(long id) {
+        return goodsDao1.getVersionById(id);
+    }
+
+    //    减库存，每次减1,使用乐观锁，不适合写多读少的场景，写冲突严重
     public boolean reduceStock(SkGoodsSeckill skGoodsSeckill) {
+//        int count=0;
+        int ret=0;
+
+        while (ret == 0) {
+            try {
+                int version = goodsDao1.getVersionById(skGoodsSeckill.getGoodsId());
+                System.out.println("====>>>version:"+version);
+                skGoodsSeckill.setVersion(version);
+                ret = goodsDao1.reduceStockByVersion(skGoodsSeckill);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+//            count++;
+        }
+//        更新redis
+        if (ret > 0) {
+            long goodsId = skGoodsSeckill.getGoodsId();
+            jedisService.set(GoodsKey.goodsStock, ""+goodsId, skGoodsSeckill.getStockCount());
+        }
+        return ret>0;
+    }
+
+    //    使用悲观锁减库存
+    public boolean reduceStockByLock(SkGoodsSeckill skGoodsSeckill) {
         int count=0;
         int ret=0;
-        while (ret == 0&&count<DEFAULT_MAX_RETRIES) {
+        while (ret == 0) {
+            if(count>5) {
+                try {
+                    Thread.sleep(5000);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
             try {
-                ret = goodsDao1.reduceStockByVersion(skGoodsSeckill);
+                UpdateWrapper<SkGoodsSeckill> updateWrapper = new UpdateWrapper<>();
+                updateWrapper.eq("goods_id", skGoodsSeckill.getGoodsId());
+                updateWrapper.gt("stock_count", 0);
+                updateWrapper.setSql("stock_count = stock_count-1");
+                ret = goodsDao1.update(skGoodsSeckill, updateWrapper);
             } catch (Exception e) {
                 e.printStackTrace();
             }
