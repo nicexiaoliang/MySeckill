@@ -20,7 +20,7 @@ public class GoodsService {
     @Autowired
     JedisService jedisService;
 
-    //    查询商品列表
+    //    查询商品列表.
     public List<SkGoodsSeckill> getGoodsList() {
         QueryWrapper<SkGoodsSeckill> skGoodsQueryWrapper = new QueryWrapper<>();
         List<SkGoodsSeckill> skGoodsList = goodsDao1.selectList(skGoodsQueryWrapper);
