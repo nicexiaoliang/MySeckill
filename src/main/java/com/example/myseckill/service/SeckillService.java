@@ -28,8 +28,8 @@ public class SeckillService {
     public boolean goodsIsOver(long goodsId) {
 //        boolean ret = jedisService.keyIsExists(SeckillKey.isGoodOver, "" + goodsId);
 //        return ret;
-        Boolean aBoolean = jedisService.get(SeckillKey.isGoodOver, "" + goodsId, boolean.class);
-        return aBoolean;
+        Boolean over = jedisService.get(SeckillKey.isGoodOver, "" + goodsId, boolean.class);
+        return over;
     }
 
     //    下单，保证事务
@@ -37,7 +37,9 @@ public class SeckillService {
     public SkOrderInfo seckill(SkUser user, SkGoodsSeckill skGoodsSeckill) {
 //        使用悲观锁，超过5次重试失败之后，线程睡眠5秒后重试
         boolean success = goodsService.reduceStockByLock(skGoodsSeckill);
+        System.out.println("update:"+success);
         if (success) {
+
             return orderService.createOrder(user, skGoodsSeckill);
         } else {
             setGoodsOver(skGoodsSeckill.getGoodsId());

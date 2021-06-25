@@ -2,6 +2,7 @@ package com.example.myseckill.redis;
 
 import com.alibaba.fastjson.JSON;
 import com.example.myseckill.entity.SkUser;
+import org.apache.ibatis.logging.stdout.StdOutImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
@@ -14,6 +15,7 @@ public class JedisService {
 
     //    存储
     public <T> boolean set(KeyPrefix keyPrefix, String key, T value) {
+//        System.out.println("set 数据:"+keyPrefix.getPrefix());
         Jedis jedis=null;
         try {
             jedis = jedisPool.getResource();
@@ -33,6 +35,12 @@ public class JedisService {
             returnPool(jedis);
         }
 
+    }
+
+    public boolean set(String key, String value) {
+        Jedis jedis = jedisPool.getResource();
+        jedis.set(key, value);
+        return true;
     }
 //获取数据
     public <T> T get(KeyPrefix keyPrefix, String key, Class<T> tClass) {
@@ -98,7 +106,7 @@ public class JedisService {
             jedis=jedisPool.getResource();
             String realKey=keyPrefix.getPrefix()+key;
             Long decr = jedis.decr(realKey);
-            return  decr;
+            return decr;
         }finally {
             returnPool(jedis);
         }

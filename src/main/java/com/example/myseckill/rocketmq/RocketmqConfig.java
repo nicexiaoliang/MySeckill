@@ -21,7 +21,7 @@ public class RocketmqConfig {
 
 @Bean
     public DefaultMQProducer defaultMQProducer() throws MQClientException {
-        DefaultMQProducer producer = new DefaultMQProducer("group0219");
+        DefaultMQProducer producer = new DefaultMQProducer("pgroup05272328");
         producer.setNamesrvAddr(host+":"+port);
         producer.setSendMsgTimeout(8000);
         producer.start();
@@ -29,10 +29,10 @@ public class RocketmqConfig {
     }
 @Bean
     public DefaultMQPushConsumer defaultMQPushConsumer() throws Exception{
-        DefaultMQPushConsumer defaultMQPushConsumer = new DefaultMQPushConsumer("group0219");
+        DefaultMQPushConsumer defaultMQPushConsumer = new DefaultMQPushConsumer("cgroup05272328");
         defaultMQPushConsumer.setNamesrvAddr(host+":"+port);
         defaultMQPushConsumer.setMessageModel(MessageModel.CLUSTERING);
-        defaultMQPushConsumer.subscribe("shop1","*");
+        defaultMQPushConsumer.subscribe("shop6","*");
 //        defaultMQPushConsumer.setMessageListener(new Listener01());
     System.out.println("listener:=========>>>>"+listener01);
         defaultMQPushConsumer.setMessageListener(listener01);

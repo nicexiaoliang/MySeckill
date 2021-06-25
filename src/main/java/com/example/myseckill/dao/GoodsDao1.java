@@ -20,4 +20,7 @@ public interface GoodsDao1 extends BaseMapper<SkGoodsSeckill> {
 
     @Select("select version from sk_goods_seckill where goods_id = #{id}")
     public int getVersionById(@Param("id") long id);
+
+    @Update("update sk_goods_seckill set stock_count=stock_count - 1 where goods_id = #{id} and stock_count>0")
+    public int reduceStockByGoodsId(@Param("id") long goodsId);
 }

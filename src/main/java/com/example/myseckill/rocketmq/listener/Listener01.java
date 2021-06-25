@@ -26,30 +26,34 @@ public class Listener01 implements MessageListenerConcurrently {
     SeckillService seckillService;
     @Autowired
     GoodsService goodsService;
+    @Autowired
+    JedisService jedisService;
     @Override
     public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> list, ConsumeConcurrentlyContext consumeConcurrentlyContext) {
         System.out.println("消费消息==>");
         for (MessageExt msg : list) {
-            System.out.println("body:"+msg.getBody());
+//            System.out.println("body:"+msg.getBody());
             byte[] bytes=msg.getBody();
             String message = new String(bytes);
 
             SeckillMessage seckillMessage = JedisService.stringToBean(message, SeckillMessage.class);
             SkUser user = seckillMessage.getUser();
             long goodsId = seckillMessage.getGoodsId();
-            System.out.println("===>消费消息goodsId："+goodsId);
-            System.out.println("=====>userid:"+user.getId());
-            System.out.println("orderservice====>"+orderService);
+//            System.out.println("===>消费消息goodsId："+goodsId);
+//            System.out.println("=====>userid:"+user.getId());
+//            System.out.println("orderservice====>"+orderService);
 //            判断是否重复下单
             SkOrderInfo order = orderService.getOrderByUserIdGoodsId(user.getId(), goodsId);
             if (order != null) {
-                System.out.println("不等于null");
+//                System.out.println("不等于null");
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             }
-            System.out.println("=====^^^^^^^^^++++++++");
+//            System.out.println("=====^^^^^^^^^++++++++");
             SkGoodsSeckill goods = goodsService.getGoodsInfoById(goodsId);
 //            写入数据库
             System.out.println("======>写入数据库");
+//            System.out.println("user.account:"+user.getId());
+//            jedisService.set("seckill" + user.getId(), "ok");
             seckillService.seckill(user, goods);
         }
         return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;

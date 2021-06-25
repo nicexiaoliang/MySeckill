@@ -96,6 +96,28 @@ class MySeckillApplicationTests {
         int i = goodsDao1.reduceStockByVersion(goods);
         System.out.println("=====>"+i);
     }
+@Test
+    public void conCurrentJedisWrite() throws InterruptedException {
+        Jedis jedis=jedisPool.getResource();
+    jedis.del("count");
+    jedis.set("count", "6000");
+    for (int i = 0; i < 2000; i++) {
+        System.out.println("new Thread");
+        new Thread(()->{
+            Jedis resource = jedisPool.getResource();
+            for (int j = 0; j < 1; j++) {
+                resource.decr("count");
+            }
+            if(resource!=null) resource.close();
+        }).start();
+    }
+
+//    for (int k = 0; k < 5000; k++) {
+//        jedis.decr("count");
+//    }
+    Thread.sleep(10000);
+    System.out.println("program over");
+    }
 
 
 

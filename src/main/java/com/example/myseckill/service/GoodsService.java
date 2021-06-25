@@ -68,30 +68,33 @@ public class GoodsService {
     public boolean reduceStockByLock(SkGoodsSeckill skGoodsSeckill) {
         int count=0;
         int ret=0;
+        long goodsId=skGoodsSeckill.getGoodsId();
         while (ret == 0) {
             if(count>5) {
                 try {
-                    Thread.sleep(5000);
+//                    Thread.sleep(5000);
+//                    System.out.println("线程睡眠...");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
             try {
-                UpdateWrapper<SkGoodsSeckill> updateWrapper = new UpdateWrapper<>();
-                updateWrapper.eq("goods_id", skGoodsSeckill.getGoodsId());
-                updateWrapper.gt("stock_count", 0);
-                updateWrapper.setSql("stock_count = stock_count-1");
-                ret = goodsDao1.update(skGoodsSeckill, updateWrapper);
+//                UpdateWrapper<SkGoodsSeckill> updateWrapper = new UpdateWrapper<>();
+//                updateWrapper.eq("goods_id", skGoodsSeckill.getGoodsId());
+//                updateWrapper.gt("stock_count", 0);
+//                updateWrapper.setSql("stock_count = stock_count-1");
+//                ret = goodsDao1.update(skGoodsSeckill, updateWrapper);
+                ret = goodsDao1.reduceStockByGoodsId(goodsId);
+                System.out.println("mysql update ret:"+ret);
             } catch (Exception e) {
                 e.printStackTrace();
             }
             count++;
         }
 //        更新redis
-        if (ret > 0) {
-            long goodsId = skGoodsSeckill.getGoodsId();
-            jedisService.set(GoodsKey.goodsStock, ""+goodsId, skGoodsSeckill.getStockCount());
-        }
+//        if (ret > 0) {
+//            jedisService.set(GoodsKey.goodsStock, ""+goodsId, skGoodsSeckill.getStockCount());
+//        }
         return ret>0;
     }
 }

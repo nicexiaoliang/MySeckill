@@ -28,7 +28,11 @@ public class OrderService {
         skOrderInfo.setCreateDate(new Date());
         skOrderInfo.setStatus(0);
         skOrderInfo.setOrderChannel(1);
-        orderDao1.insert(skOrderInfo);
+        int ret = 0;
+//      要循环保证插入成功？
+        while (ret == 0) {
+            ret=orderDao1.insert(skOrderInfo);
+        }
 //        更新redis
         jedisService.set(OrderKey.orderKeyPrefix, "" + user.getId() + "_" + skGoodsSeckill.getGoodsId(), skOrderInfo);
         return skOrderInfo;

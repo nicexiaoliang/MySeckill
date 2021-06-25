@@ -7,7 +7,9 @@ import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class TestController01 {
@@ -32,6 +34,12 @@ public class TestController01 {
         }
         System.out.println("生成者发送消息");
         return "hello";
+    }
+
+    @GetMapping("/test/qps")
+    public @ResponseBody
+    String testQps() {
+        return "success";
     }
 
 

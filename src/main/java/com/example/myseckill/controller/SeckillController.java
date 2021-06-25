@@ -14,6 +14,7 @@ import com.example.myseckill.service.OrderService;
 import com.example.myseckill.service.SeckillService;
 import com.google.common.util.concurrent.RateLimiter;
 import lombok.SneakyThrows;
+import org.apache.ibatis.annotations.Param;
 import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
@@ -60,34 +61,32 @@ public class SeckillController {
 
     @RequestMapping("/seckill/goodsid/{goodsId}")
 //    @ResponseBody
+//    @PathVariable("goodsId") long goodsId, SkUser user, Model model
     public String doSeckill(@PathVariable("goodsId") long goodsId, SkUser user, Model model) throws UnsupportedEncodingException, InterruptedException, RemotingException, MQClientException, MQBrokerException {
 //        System.out.println("收到goodsId:"+goodsId);
-//        System.out.println("收到user:"+user);
-        if (!rateLimiter.tryAcquire(1000, TimeUnit.MILLISECONDS)) {
-            return "error";
-        }
-//        初始化
-        if (init_count == 0) {
-            init();
-            init_count=1;
-        }
+        System.out.println("收到user:"+user);
+//        if (!rateLimiter.tryAcquire(1000, TimeUnit.MILLISECONDS)) {
+//            return "error";
+//        }
 //        限流
-        if (!rateLimiter.tryAcquire()) {
-            return "error";
-        }
+//        if (!rateLimiter.tryAcquire()) {
+//            return "error";
+//        }
 //        判断是否卖完了
+
+
         boolean over = seckillService.goodsIsOver(goodsId);
         if (over) {
 //            卖完了
             model.addAttribute("msg", CodeMsg.SECKILL_OVER);
+            System.out.println(CodeMsg.SECKILL_OVER);
             return "error";
         }
 
 //        在redis中判断是否重复秒杀.
         Boolean wasBought = jedisService.get(SeckillKey.wasBought, "" + user.getId() + "_" + goodsId, boolean.class);
-
         if (wasBought != null) {
-            System.out.println("aboolean:"+wasBought);
+            System.out.println("wasBought:"+wasBought);
             if (wasBought) {
                 model.addAttribute("msg", "redis中检测到重复秒杀");
                 return "error";
@@ -96,47 +95,46 @@ public class SeckillController {
 
 //        判断是否重复秒杀?????不必要？
 //        如果redis崩溃了，这里可以派上用场.
-        SkOrderInfo order = orderService.getOrderByUserIdGoodsId(user.getId(), goodsId);
-        if (order != null) {
-            model.addAttribute("msg", "mysql中检测到重复秒杀");
-            return "error";
-        }
+//        SkOrderInfo order = orderService.getOrderByUserIdGoodsId(user.getId(), goodsId);
+//        if (order != null) {
+//            model.addAttribute("msg", "mysql中检测到重复秒杀");
+//            return "error";
+//        }
 
 //        redis预减库存,redis是单线程处理
 //
         Long stock = jedisService.decre(GoodsKey.goodsStock, goodsId + "");
         System.out.println("stock:"+stock);
-        if (stock < 0) {
+        if (stock <= 0) {
             seckillService.setGoodsOver(goodsId);
             model.addAttribute("msg", "秒杀结束了");
             return "error";
         }
 
+
         // 入队,使用多线程，异步发送
-        SeckillMessage seckillMessage = new SeckillMessage();
-        seckillMessage.setUser(user);
-        seckillMessage.setGoodsId(goodsId);
-        String string = JedisService.beanToString(seckillMessage);
-        Message message = new Message("shop1", "tag1", string.getBytes(RemotingHelper.DEFAULT_CHARSET));
+//        SeckillMessage seckillMessage = new SeckillMessage();
+//        seckillMessage.setUser(user);
+//        seckillMessage.setGoodsId(goodsId);
+//        String string = JedisService.beanToString(seckillMessage);
+//        Message message = new Message("shop6", "tag1", string.getBytes(RemotingHelper.DEFAULT_CHARSET));
+//
+//        Runnable task=new Runnable() {
+//            @SneakyThrows
+//            @Override
+//            public void run() {
+//                SendStatus sendOk=SendStatus.SEND_OK;
+//                SendStatus sendStatus=SendStatus.SLAVE_NOT_AVAILABLE;
+//                while(sendStatus!=sendOk){
+//                    System.out.println("to send message..");
+//                    SendResult sendResult = sender.send(message);
+//                    sendStatus=sendResult.getSendStatus();
+//                    System.out.println("status:"+sendStatus);
+//                }
+//            }
+//        };
+//        senderGroup.execute(task);
 
-        Runnable task=new Runnable() {
-            @SneakyThrows
-            @Override
-            public void run() {
-                SendStatus sendOk=SendStatus.SEND_OK;
-                SendStatus sendStatus=SendStatus.SLAVE_NOT_AVAILABLE;
-                while(sendStatus!=sendOk){
-                    SendResult sendResult = sender.send(message);
-                    sendStatus=sendResult.getSendStatus();
-                }
-            }
-        };
-        senderGroup.execute(task);
-
-//        System.out.println(sendResult.getSendStatus());
-//        logger.info(send.getSendStatus().toString());
-//        send_count++;
-//        System.out.println("===============>消息发送总数："+send_count);
 //        标记下单过了
         jedisService.set(SeckillKey.wasBought, "" + user.getId() + "_" + goodsId, true);
         //返回hello页面说明成功了
@@ -145,15 +143,15 @@ public class SeckillController {
 
     //    初始化
     public void init() {
-        System.out.println("初始化......");
-        List<SkGoodsSeckill> goodsList = goodsService.getGoodsList();
-        if (goodsList == null) {
-            return;
-        }
-        for (SkGoodsSeckill goods : goodsList) {
-            jedisService.set(GoodsKey.goodsStock,""+goods.getGoodsId(),goods.getStockCount());
-            jedisService.set(SeckillKey.isGoodOver, ""+goods.getGoodsId(),false);
-        }
+//        System.out.println("初始化......");
+//        List<SkGoodsSeckill> goodsList = goodsService.getGoodsList();
+//        if (goodsList == null) {
+//            return;
+//        }
+//        for (SkGoodsSeckill goods : goodsList) {
+//            jedisService.set(GoodsKey.goodsStock,""+goods.getGoodsId(),goods.getStockCount());
+//            jedisService.set(SeckillKey.isGoodOver, ""+goods.getGoodsId(),false);
+//        }
     }
 
 
