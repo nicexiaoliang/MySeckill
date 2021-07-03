@@ -72,7 +72,7 @@ public class SeckillController {
 //        if (!rateLimiter.tryAcquire()) {
 //            return "error";
 //        }
-//        判断是否卖完了
+//        判断是否卖完了.
 
 
         boolean over = seckillService.goodsIsOver(goodsId);
