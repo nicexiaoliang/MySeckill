@@ -64,7 +64,7 @@ public class SeckillController {
 //    @PathVariable("goodsId") long goodsId, SkUser user, Model model
     public String doSeckill(@PathVariable("goodsId") long goodsId, SkUser user, Model model) throws UnsupportedEncodingException, InterruptedException, RemotingException, MQClientException, MQBrokerException {
 //        System.out.println("收到goodsId:"+goodsId);
-        System.out.println("收到user:"+user);
+//        System.out.println("收到user:"+user);
 //        if (!rateLimiter.tryAcquire(1000, TimeUnit.MILLISECONDS)) {
 //            return "error";
 //        }
@@ -101,8 +101,9 @@ public class SeckillController {
 //            return "error";
 //        }
 
-//        redis预减库存,redis是单线程处理
+//        redis预减库存,redis是单线程处理，防止超卖
 //
+//        ####################redis扣减库存和生成订单是否应该组成事务？################
         Long stock = jedisService.decre(GoodsKey.goodsStock, goodsId + "");
         System.out.println("stock:"+stock);
         if (stock <= 0) {
@@ -111,32 +112,34 @@ public class SeckillController {
             return "error";
         }
 
+        // 标记下单过了，先标记下单，再异步写入数据库，如果应用宕机，可以从redis中恢复订单记录
+        jedisService.set(SeckillKey.wasBought, "" + user.getId() + "_" + goodsId, true);
 
         // 入队,使用多线程，异步发送
-//        SeckillMessage seckillMessage = new SeckillMessage();
-//        seckillMessage.setUser(user);
-//        seckillMessage.setGoodsId(goodsId);
-//        String string = JedisService.beanToString(seckillMessage);
-//        Message message = new Message("shop6", "tag1", string.getBytes(RemotingHelper.DEFAULT_CHARSET));
-//
-//        Runnable task=new Runnable() {
-//            @SneakyThrows
-//            @Override
-//            public void run() {
-//                SendStatus sendOk=SendStatus.SEND_OK;
-//                SendStatus sendStatus=SendStatus.SLAVE_NOT_AVAILABLE;
-//                while(sendStatus!=sendOk){
-//                    System.out.println("to send message..");
-//                    SendResult sendResult = sender.send(message);
-//                    sendStatus=sendResult.getSendStatus();
-//                    System.out.println("status:"+sendStatus);
-//                }
-//            }
-//        };
-//        senderGroup.execute(task);
+        SeckillMessage seckillMessage = new SeckillMessage();
+        seckillMessage.setUser(user);
+        seckillMessage.setGoodsId(goodsId);
+        String string = JedisService.beanToString(seckillMessage);
+        Message message = new Message("shop6", "tag1", string.getBytes(RemotingHelper.DEFAULT_CHARSET));
 
-//        标记下单过了
-        jedisService.set(SeckillKey.wasBought, "" + user.getId() + "_" + goodsId, true);
+        Runnable task=new Runnable() {
+            @SneakyThrows
+            @Override
+            public void run() {
+                SendStatus sendOk=SendStatus.SEND_OK;
+                SendStatus sendStatus=SendStatus.SLAVE_NOT_AVAILABLE;
+//                应该采用策略模式
+                while(sendStatus!=sendOk){
+//                    System.out.println("to send message..");
+                    SendResult sendResult = sender.send(message);
+                    sendStatus=sendResult.getSendStatus();
+//                    System.out.println("status:"+sendStatus);
+                }
+            }
+
+        };
+        senderGroup.execute(task);
+
         //返回hello页面说明成功了
         return "hello";
     }
